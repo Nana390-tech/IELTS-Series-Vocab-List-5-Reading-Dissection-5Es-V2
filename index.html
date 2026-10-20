@@ -1,0 +1,1379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dissecting Readings — Thirty Seconds to Decide</title>
+<style>
+:root{
+  --pine:#16213E; --pine2:#2E4A9E; --mint:#EAEDF5; --paper:#FFFFFF;
+  --amber:#F2635B; --amber-d:#C44439;
+  --ok:#1E7A5F; --ok-bg:#E1F1EB; --no:#9B2F3F; --no-bg:#FAE9EC;
+  --line:#CBD2E4; --muted:#5C6584; --text:#141A2E;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--mint); color:var(--text);
+  font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.55;
+}
+button{font-family:inherit; font-size:inherit; cursor:pointer}
+
+/* ---------- header ---------- */
+header{background:var(--pine); color:#EEF1F8; padding:14px 22px}
+.hwrap{max-width:1180px; margin:0 auto; display:flex; align-items:center; gap:18px; flex-wrap:wrap}
+.brand h1{margin:0; font-size:22px; letter-spacing:.3px}
+.brand p{margin:2px 0 0; font-size:13px; color:#A3ACC6}
+.hspace{flex:1}
+.chip{background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.22); border-radius:20px;
+  padding:5px 13px; font-size:13.5px; display:inline-flex; align-items:center; gap:7px; color:#EEF1F8}
+.chip b{color:var(--amber); font-size:15px}
+.hbtn{background:transparent; color:#EEF1F8; border:1px solid rgba(255,255,255,.3); border-radius:6px;
+  padding:6px 12px; font-size:13px}
+.hbtn:hover{background:rgba(255,255,255,.12)}
+.hbtn.on{background:var(--amber); border-color:var(--amber); color:#3A0D08; font-weight:600}
+
+/* ---------- tabs ---------- */
+nav.tabs{background:var(--pine2); padding:0 22px}
+.twrap{max-width:1180px; margin:0 auto; display:flex; gap:2px; flex-wrap:wrap}
+.tab{background:transparent; border:0; color:#A8B1CA; padding:11px 18px; font-size:14.5px; border-bottom:3px solid transparent}
+.tab.active{color:#fff; border-bottom-color:var(--amber); font-weight:600}
+
+/* ---------- layout ---------- */
+main{max-width:1180px; margin:20px auto 60px; padding:0 22px; display:grid; grid-template-columns:250px 1fr; gap:20px}
+@media(max-width:860px){ main{grid-template-columns:1fr} }
+
+aside{background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:14px; align-self:start}
+aside h3{margin:0 0 4px; font-size:13px; text-transform:none; color:var(--muted); font-weight:600}
+aside .ptitle{font-size:15px; font-weight:700; margin:0 0 10px; line-height:1.3}
+.plist{display:flex; flex-direction:column; gap:5px}
+.pitem{display:flex; align-items:center; gap:9px; text-align:left; background:#F1F4FA; border:1px solid var(--line);
+  border-radius:7px; padding:8px 10px; font-size:14px; color:var(--text)}
+.pitem:hover{border-color:var(--pine2)}
+.pitem.active{background:var(--pine); color:#fff; border-color:var(--pine)}
+.pitem .tag{flex:0 0 24px; height:24px; border-radius:5px; background:var(--pine2); color:#fff;
+  display:grid; place-items:center; font-size:12.5px; font-weight:700}
+.pitem.active .tag{background:var(--amber); color:#3A0D08}
+.pitem .done{margin-left:auto; color:var(--ok); font-weight:700}
+.pitem.active .done{color:var(--amber)}
+.bar{height:7px; background:#DDE3F0; border-radius:4px; overflow:hidden; margin-top:12px}
+.bar span{display:block; height:100%; background:var(--amber); width:0%}
+.barlbl{font-size:12px; color:var(--muted); margin-top:5px}
+
+section.panel{background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:0; overflow:hidden}
+.phead{padding:16px 22px; border-bottom:1px solid var(--line)}
+.phead .kicker{font-size:12.5px; color:var(--muted); margin:0}
+.phead h2{margin:2px 0 0; font-size:20px}
+
+.stages{display:flex; gap:6px; padding:12px 22px; border-bottom:1px solid var(--line); flex-wrap:wrap; background:#F4F6FB}
+.stg{border:1px solid var(--line); background:#fff; border-radius:20px; padding:6px 14px; font-size:13.5px; color:var(--muted)}
+.stg.active{background:var(--pine); border-color:var(--pine); color:#fff; font-weight:600}
+.stg.ok{border-color:var(--ok); color:var(--ok)}
+.stg.ok.active{background:var(--ok); border-color:var(--ok); color:#fff}
+
+.body{padding:20px 22px}
+.instr{background:#EDF0F8; border-left:4px solid var(--amber); padding:10px 14px; font-size:14.5px; margin:0 0 18px}
+.instr b{color:var(--pine)}
+
+.passage{font-family:Georgia,"Times New Roman",serif; font-size:17px; line-height:1.75; background:#FBFAF7;
+  border:1px solid var(--line); border-radius:8px; padding:16px 18px}
+.passage.small{font-size:16px}
+
+/* sentence cards */
+.scard{border:1px solid var(--line); border-radius:8px; margin-bottom:10px; overflow:hidden}
+.scard .orig{font-family:Georgia,serif; font-size:16.5px; padding:12px 14px; background:#FBFAF7}
+.scard .rev{display:none; border-top:1px dashed var(--line); padding:12px 14px; background:#EDF0F8}
+.scard.open .rev{display:block}
+.rev .lab{font-size:12px; color:var(--muted); font-weight:700; display:block; margin-bottom:2px}
+.rev .simple{font-size:15.5px; margin:0 0 10px}
+.rev .note{font-size:14px; color:var(--muted); margin:0; border-top:1px solid var(--line); padding-top:8px}
+.mini{background:var(--pine2); color:#fff; border:0; border-radius:6px; padding:5px 12px; font-size:13px; margin:0 14px 12px}
+.mini.ghost{background:#fff; color:var(--pine2); border:1px solid var(--pine2)}
+
+/* questions */
+.qcard{border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px}
+.qcard .qnum{font-size:12px; color:var(--muted); font-weight:700}
+.qcard .stem{font-size:16px; margin:3px 0 4px; font-weight:600}
+.qcard .ctx{font-family:Georgia,serif; background:#FBFAF7; border-left:3px solid var(--line); padding:8px 12px;
+  font-size:15.5px; margin:8px 0 12px; color:#283356}
+.opt{display:block; width:100%; text-align:left; background:#fff; border:1px solid var(--line); border-radius:7px;
+  padding:10px 13px; margin-bottom:7px; font-size:15px}
+.opt:hover:not(:disabled){border-color:var(--pine2); background:#F4F6FB}
+.opt:disabled{cursor:default}
+.opt .k{display:inline-block; width:22px; font-weight:700; color:var(--muted)}
+.opt.right{background:var(--ok-bg); border-color:var(--ok)}
+.opt.right .k{color:var(--ok)}
+.opt.wrong{background:var(--no-bg); border-color:var(--no)}
+.opt.wrong .k{color:var(--no)}
+.fb{display:none; margin-top:10px; padding:11px 13px; border-radius:7px; font-size:14.5px}
+.fb.show{display:block}
+.fb.good{background:var(--ok-bg); border:1px solid var(--ok)}
+.fb.bad{background:var(--no-bg); border:1px solid var(--no)}
+.fb b{display:block; margin-bottom:3px}
+.ar{display:none; margin-top:8px; font-size:17px; direction:rtl; text-align:right; color:var(--pine2);
+  background:#EDF0F8; border-radius:6px; padding:6px 10px}
+.ar.show{display:block}
+.pill{display:inline-block; background:var(--amber); color:#3A0D08; font-weight:700; font-size:12px;
+  border-radius:12px; padding:2px 9px; margin-left:8px}
+
+.navrow{display:flex; gap:10px; align-items:center; padding:16px 22px; border-top:1px solid var(--line); background:#F4F6FB}
+.btn{background:var(--pine); color:#fff; border:0; border-radius:7px; padding:10px 18px; font-size:15px; font-weight:600}
+.btn:disabled{opacity:.4}
+.btn.ghost{background:#fff; color:var(--pine); border:1px solid var(--pine)}
+.btn.amber{background:var(--amber); color:#3A0D08}
+.navrow .sp{flex:1}
+.hint{font-size:13.5px; color:var(--muted)}
+
+/* progress page */
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+@media(max-width:760px){ .grid2{grid-template-columns:1fr} }
+.stat{background:#F4F6FB; border:1px solid var(--line); border-radius:9px; padding:14px}
+.stat .n{font-size:30px; font-weight:700; color:var(--pine)}
+.stat .l{font-size:13px; color:var(--muted)}
+.badge{display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:20px;
+  padding:7px 14px; margin:0 8px 8px 0; font-size:14px; background:#F1F4FA; color:var(--muted)}
+.badge.won{background:var(--pine); color:#fff; border-color:var(--pine)}
+.badge.won .ic{color:var(--amber)}
+table.res{width:100%; border-collapse:collapse; font-size:14px; margin-top:8px}
+table.res th,table.res td{border:1px solid var(--line); padding:6px 9px; text-align:left}
+table.res th{background:#EDF0F8}
+
+/* certificate */
+#cert{display:none; background:#FBFAF7; border:3px double var(--pine); border-radius:8px; padding:28px; text-align:center; margin-top:18px}
+#cert.show{display:block}
+#cert h3{font-family:Georgia,serif; font-size:26px; margin:0 0 4px; color:var(--pine)}
+#cert .nm{font-family:Georgia,serif; font-size:24px; border-bottom:1.5px solid var(--pine); display:inline-block;
+  padding:0 26px 3px; margin:14px 0}
+#cert input{font-family:Georgia,serif; font-size:20px; text-align:center; border:0; border-bottom:1.5px solid var(--pine);
+  background:transparent; padding:4px; width:280px}
+.sig{margin-top:20px; font-size:13.5px; color:var(--muted)}
+
+footer{text-align:center; padding:18px; font-size:13px; color:var(--muted)}
+.conf{position:fixed; width:9px; height:14px; top:-20px; z-index:99; pointer-events:none}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg); opacity:.2}}
+@media print{ header,nav,aside,.navrow,.tabs,.hbtn{display:none!important} main{display:block}
+  body.certonly .phead, body.certonly .grid2, body.certonly table.res, body.certonly h3,
+  body.certonly .badge, body.certonly .hint, body.certonly #printCert{display:none!important}
+  body.certonly #cert{border:3px double #16213E; margin:0}
+}
+
+/* the sidebar only exists in Explain — every other phase gets the full width */
+main.full{grid-template-columns:1fr}
+/* ---------- 5E phase bar ---------- */
+nav.tabs .tab .ph{display:inline-grid; place-items:center; width:21px; height:21px; border-radius:50%;
+  background:rgba(255,255,255,.16); font-size:12px; font-weight:700; margin-right:8px; vertical-align:-4px}
+nav.tabs .tab.active .ph{background:var(--amber); color:#3A0D08}
+.phasehead{background:var(--pine); color:#EDF4F2; padding:16px 22px; display:flex; align-items:center; gap:16px}
+.phasehead .n{flex:0 0 46px; height:46px; border-radius:50%; background:var(--amber); color:#3A0D08;
+  display:grid; place-items:center; font-size:22px; font-weight:700}
+.phasehead h2{margin:0; font-size:20px; color:#fff}
+.phasehead p{margin:2px 0 0; font-size:13.5px; color:#A3ACC6}
+.phasehead .mins{margin-left:auto; font-size:13px; color:#A3ACC6; white-space:nowrap}
+.wordgrid{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:0 0 18px}
+@media(max-width:860px){ .wordgrid{grid-template-columns:repeat(3,1fr)} }
+.wcard{background:#F4F6FB; border:1px solid var(--line); border-radius:8px; padding:10px 6px; text-align:center;
+  font-size:14.5px; font-weight:600; color:var(--pine2)}
+.wcard small{display:block; font-weight:400; font-size:12px; color:var(--muted); margin-top:2px}
+textarea.tbox{width:100%; font-family:inherit; font-size:15px; border:1px solid var(--line); border-radius:8px;
+  padding:10px 12px; resize:vertical; min-height:74px; background:#fff; color:var(--text)}
+textarea.tbox:focus{outline:2px solid var(--pine2); outline-offset:1px}
+.saved{font-size:13px; color:var(--ok); font-weight:600; margin-left:8px}
+.goalpick{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px}
+.gp{border:1px solid var(--line); background:#fff; border-radius:20px; padding:7px 14px; font-size:14px; color:var(--muted); text-align:left}
+.gp.on{background:var(--pine); color:#fff; border-color:var(--pine); font-weight:600}
+mark.hl{background:#FFE2A8; padding:1px 0}
+.hlbar{display:flex; gap:8px; align-items:center; margin:0 0 10px; flex-wrap:wrap}
+.para{margin:0 0 15px}
+.para .plab{display:inline-block; background:var(--pine2); color:#fff; font-size:12px; font-weight:700;
+  border-radius:4px; padding:1px 7px; margin-right:8px; font-family:"Segoe UI",sans-serif; vertical-align:2px}
+.jobrow{display:grid; grid-template-columns:70px 1fr; gap:10px; align-items:start; margin-bottom:9px}
+.jobrow .t{background:var(--pine2); color:#fff; border-radius:6px; text-align:center; padding:7px 0; font-weight:700; font-size:14px}
+.mypred{background:#FDECEA; border:1px solid #F3B9B3; border-radius:8px; padding:11px 14px; margin:0 0 14px; font-size:14.5px}
+.mypred b{display:block; font-size:12px; color:var(--amber-d); margin-bottom:3px}
+/* ---------- diagram ---------- */
+.dgwrap{display:grid; grid-template-columns:1fr 290px; gap:18px}
+@media(max-width:860px){ .dgwrap{grid-template-columns:1fr} }
+.parts{display:flex; flex-direction:column; gap:8px}
+.part{border:1px solid var(--line); background:#fff; border-radius:8px; padding:11px 13px; font-size:15px; text-align:left}
+.part:hover:not(:disabled){border-color:var(--pine2); background:#F4F6FB}
+.part:disabled{background:var(--ok-bg); border-color:var(--ok); color:var(--ok); font-weight:600; cursor:default}
+.dgbox{background:#FBFAFD; border:1px solid var(--line); border-radius:8px; padding:8px}
+.selfgrid{display:grid; grid-template-columns:1fr auto; gap:10px 16px; align-items:center}
+.stars{display:flex; gap:5px}
+.star{width:30px; height:30px; border-radius:6px; border:1px solid var(--line); background:#fff; font-size:14px; color:var(--muted)}
+.star.on{background:var(--amber); border-color:var(--amber); color:#3A0D08; font-weight:700}
+.bars5{display:flex; flex-direction:column; gap:9px; margin-top:4px}
+.b5{display:grid; grid-template-columns:195px 1fr 54px; gap:10px; align-items:center; font-size:14px}
+.fb b + br{display:none}
+.b5 .track{height:14px; background:#D8E6E2; border-radius:7px; overflow:hidden}
+.b5 .track i{display:block; height:100%; background:var(--pine2)}
+.b5.weak .track i{background:var(--amber)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hwrap">
+    <div class="brand">
+      <h1>Dissecting Readings — Thirty Seconds to Decide</h1>
+      <p>B1+ List 5 · News · one paragraph at a time, in five stages</p>
+    </div>
+    <div class="hspace"></div>
+    <span class="chip">Points <b id="pts">0</b></span>
+    <span class="chip">Paragraphs <b id="pdone">0/7</b></span>
+    <button class="hbtn" id="arBtn">العربية OFF</button>
+    <button class="hbtn" id="saveBtn">Save</button>
+    <button class="hbtn" id="loadBtn">Load</button>
+    <input type="file" id="fileIn" accept="application/json" hidden>
+  </div>
+</header>
+
+<nav class="tabs"><div class="twrap">
+  <button class="tab active" data-view="0"><span class="ph">1</span>Engage</button>
+  <button class="tab" data-view="1"><span class="ph">2</span>Explore</button>
+  <button class="tab" data-view="2"><span class="ph">3</span>Explain</button>
+  <button class="tab" data-view="3"><span class="ph">4</span>Extend</button>
+  <button class="tab" data-view="4"><span class="ph">5</span>Evaluate</button>
+  <button class="tab" data-view="5">How to use this</button>
+</div></nav>
+
+<main>
+  <aside id="side"></aside>
+  <section class="panel" id="panel"></section>
+</main>
+
+<footer>Dissecting Readings · Thirty Seconds to Decide · companion to B1+ Vocabulary List 5 (News) · Designed by: Nazila Motahari</footer>
+
+<script>
+/* ============================================================
+   CONTENT
+   ============================================================ */
+const DATA = [
+ {
+  "tag": "A",
+  "label": "Before and after",
+  "text": "Twenty years ago, most people here met the news at a fixed time. The paper came in the morning. The television news came in the evening and ended with the weather forecast. You waited, and then you were told. Today almost nobody waits. News reaches a phone in a pocket at any hour, and it usually arrives before anyone has had time to check it. That one change has made the news faster, and it has also changed the way we approach it.",
+  "job": "The opening paragraph sets up a before-and-after. The first half is the past, the second half is now, and the last sentence tells you what the whole passage will argue. Notice that the writer never says the old way was better.",
+  "sents": [
+   {
+    "o": "Twenty years ago, most people here met the news at a fixed time.",
+    "s": "Twenty years ago, most people got the news at the same time every day.",
+    "n": "\"Most people\" — not everybody. The writer hedges in the very first sentence, and keeps doing it all the way through."
+   },
+   {
+    "o": "News reaches a phone in a pocket at any hour, and it usually arrives before anyone has had time to check it.",
+    "s": "News arrives on a phone at any time, and it usually gets there before anyone can check it.",
+    "n": "\"Usually\" is the careful word. The writer is not saying news is never checked, only that it normally arrives first."
+   },
+   {
+    "o": "That one change has made the news faster, and it has also changed the way we approach it.",
+    "s": "That change has made the news faster, and it has also changed how we deal with it.",
+    "n": "Two results from one cause. The second half — how we approach the news — is what the rest of the passage is really about."
+   }
+  ],
+  "vocab": [
+   {
+    "w": "at a fixed time",
+    "ctx": "…most people here met the news at a fixed time.",
+    "o": [
+     "at a time that never changed",
+     "at a time they chose themselves",
+     "very late at night"
+    ],
+    "a": 0,
+    "why": "The next two sentences give the times: the paper in the morning, the television in the evening. Those times were decided for you and stayed the same, which is what \"fixed\" means.",
+    "ar": "في وقت ثابت / محدد"
+   },
+   {
+    "w": "approach",
+    "ctx": "…it has also changed the way we approach it.",
+    "o": [
+     "walk towards",
+     "deal with / think about",
+     "pay for"
+    ],
+    "a": 1,
+    "why": "You cannot walk towards the news, and the paragraph says nothing about money. Here \"approach\" is about the way we handle something. This is a List 5 word doing a new job.",
+    "ar": "نتعامل مع / نتناول"
+   }
+  ],
+  "infer": {
+   "stem": "You waited, and then you were told.",
+   "q": "What is the writer suggesting about the old way of getting news?",
+   "o": [
+    "People had no choice about when or what they heard",
+    "People were happier with the news in the past",
+    "The news was always correct in the past"
+   ],
+   "a": 0,
+   "why": "\"You waited\" and \"you were told\" both put the reader in the passive position — somebody else decided. The writer never says the old way was better or more correct; adding that would be reading in something that is not there."
+  },
+  "checks": [
+   {
+    "q": "When did people get the news twenty years ago?",
+    "o": [
+     "Whenever they wanted",
+     "At fixed times — morning paper, evening television",
+     "Only once a week"
+    ],
+    "a": 1,
+    "why": "The paper came in the morning and the television news in the evening. \"At any hour\" describes today, not then."
+   },
+   {
+    "q": "What two things has the change done?",
+    "o": [
+     "Made the news faster, and changed how we approach it",
+     "Made the news slower and more careful",
+     "Made the news cheaper and shorter"
+    ],
+    "a": 0,
+    "why": "Both results are in the last sentence, joined by \"and it has also\". When a sentence gives you two results, a question will usually ask for both."
+   }
+  ]
+ },
+ {
+  "tag": "B",
+  "label": "One photograph from a balcony",
+  "text": "Speed is the first thing people notice. When something big happens, the first pictures are online within minutes, and they are almost never taken by reporters. They are taken by whoever was standing nearby. When a gas pipe exploded under a tower block in Beirut, the clearest photograph came from a student on a balcony above the street. She attached it to a message and sent it to a friend. It was online before the rescue teams arrived, and a news channel used it that evening.",
+  "job": "This paragraph proves the first point with one example. The structure is: make a claim, then tell a short story that shows it. The story is there as evidence, not as decoration.",
+  "sents": [
+   {
+    "o": "When something big happens, the first pictures are online within minutes, and they are almost never taken by reporters.",
+    "s": "When something big happens, the first pictures appear online in minutes, and reporters almost never take them.",
+    "n": "\"Almost never\" is not \"never\". It leaves room for the times a reporter was there, which matters in a True / False / Not Given question."
+   },
+   {
+    "o": "When a gas pipe exploded under a tower block in Beirut, the clearest photograph came from a student on a balcony above the street.",
+    "s": "When a gas pipe exploded under a tower block in Beirut, the best photograph came from a student on a balcony.",
+    "n": "Follow who did what: a student took it, not a reporter. The example is chosen to prove the sentence before it."
+   },
+   {
+    "o": "It was online before the rescue teams arrived, and a news channel used it that evening.",
+    "s": "It was online before the rescue teams got there, and a news channel used it that evening.",
+    "n": "Two times in one sentence, and the order matters: online first, rescue teams second, news channel last. The order is the point."
+   }
+  ],
+  "vocab": [
+   {
+    "w": "whoever",
+    "ctx": "They are taken by whoever was standing nearby.",
+    "o": [
+     "any person who",
+     "nobody who",
+     "the person who refused to"
+    ],
+    "a": 0,
+    "why": "\"Who-ever\" means it does not matter which person. The sentence before says the pictures are not taken by reporters, so they are taken by any ordinary person who happened to be there.",
+    "ar": "أيًا كان من / كل من"
+   },
+   {
+    "w": "a balcony",
+    "ctx": "…the clearest photograph came from a student on a balcony above the street.",
+    "o": [
+     "a platform outside an upstairs window",
+     "a room under the ground",
+     "a type of camera"
+    ],
+    "a": 0,
+    "why": "It is \"above the street\", and a person can stand on it. That places it outside and high up. If it were a camera, you could not be \"on\" it.",
+    "ar": "شُرفة / بلكونة"
+   }
+  ],
+  "infer": {
+   "stem": "…the first pictures are online within minutes, and they are almost never taken by reporters.",
+   "q": "Why does the writer mention the student with the phone?",
+   "o": [
+    "To show that reporters are no longer needed at all",
+    "To give one real example of the claim made in the sentence before",
+    "To prove that students take better photographs than reporters"
+   ],
+   "a": 1,
+   "why": "The story follows the claim and supports it. The writer never says reporters are unnecessary — a news channel still used the picture — and never compares the skill of students and reporters."
+  },
+  "checks": [
+   {
+    "q": "Who took the clearest photograph in Beirut?",
+    "o": [
+     "A news reporter",
+     "A student on a balcony",
+     "A rescue team member"
+    ],
+    "a": 1,
+    "why": "\"…the clearest photograph came from a student on a balcony above the street.\" The news channel used it later; it did not take it."
+   },
+   {
+    "q": "When was the photograph online?",
+    "o": [
+     "Before the rescue teams arrived",
+     "After the evening news",
+     "A week later"
+    ],
+    "a": 0,
+    "why": "\"It was online before the rescue teams arrived.\" The evening news came afterwards, which is the writer's whole point about speed."
+   }
+  ]
+ },
+ {
+  "tag": "C",
+  "label": "Who decides what you see",
+  "text": "The way a story travels has changed too. Previously an editor decided what appeared on the front page, and readers saw whatever that editor chose. Now a story moves because ordinary people share it, and the ones that travel furthest are rarely the most important. They are the ones that are strange, funny, frightening or unfair. A careful report about a new law may reach very few readers, even though most of them would be in favour of it, while one unpleasant photograph reaches millions in a day.",
+  "job": "A then-and-now paragraph about power. It says who used to choose the news and who chooses it now, and then explains which stories win. The last sentence puts two opposite examples side by side so you feel the difference.",
+  "sents": [
+   {
+    "o": "Previously an editor decided what appeared on the front page, and readers saw whatever that editor chose.",
+    "s": "In the past an editor chose what went on the front page, and readers only saw that choice.",
+    "n": "\"Previously\" is the formal word for \"before\". It is also a signal: expect \"now\" in the next sentence, and it comes."
+   },
+   {
+    "o": "Now a story moves because ordinary people share it, and the ones that travel furthest are rarely the most important.",
+    "s": "Now stories spread because ordinary people share them, and the ones that spread most are not usually the most important.",
+    "n": "\"Rarely\" is a careful word. Not \"never\" — sometimes an important story does travel. Swapping \"rarely\" for \"never\" is how a True statement becomes False."
+   },
+   {
+    "o": "A careful report about a new law may reach very few readers, even though most of them would be in favour of it, while one unpleasant photograph reaches millions in a day.",
+    "s": "A careful report about a new law may reach very few people, even if most would support it, while one unpleasant photograph reaches millions in a day.",
+    "n": "One long sentence holding two opposite examples. \"May reach\" is a possibility, not a fact — the writer is giving an example, not a statistic."
+   }
+  ],
+  "vocab": [
+   {
+    "w": "an editor",
+    "ctx": "Previously an editor decided what appeared on the front page…",
+    "o": [
+     "a person who chooses what a newspaper prints",
+     "a person who sells newspapers",
+     "a machine that prints newspapers"
+    ],
+    "a": 0,
+    "why": "The sentence tells you what this person does: decides what appears on the front page. A seller does not choose the stories, and a machine does not decide.",
+    "ar": "محرّر"
+   },
+   {
+    "w": "furthest",
+    "ctx": "…the ones that travel furthest are rarely the most important.",
+    "o": [
+     "the greatest distance",
+     "the shortest distance",
+     "the most slowly"
+    ],
+    "a": 0,
+    "why": "\"Far\" becomes \"further\" and then \"furthest\" — the biggest distance of all. The next sentence proves it with \"reaches millions\".",
+    "ar": "الأبعد / إلى أبعد مدى"
+   }
+  ],
+  "infer": {
+   "stem": "…the ones that travel furthest are rarely the most important.",
+   "q": "What is the writer saying about popular stories?",
+   "o": [
+    "Popular stories are always false",
+    "Being widely shared does not mean a story matters",
+    "Important stories are never shared at all"
+   ],
+   "a": 1,
+   "why": "\"Rarely the most important\" separates how far a story travels from how much it matters. The writer does not say popular stories are false, and \"rarely\" is not \"never\", which rules out the third option."
+  },
+  "checks": [
+   {
+    "q": "Who decided what readers saw in the past?",
+    "o": [
+     "An editor",
+     "Ordinary people sharing stories",
+     "The readers themselves"
+    ],
+    "a": 0,
+    "why": "\"Previously an editor decided what appeared on the front page.\" Ordinary people sharing is what happens now."
+   },
+   {
+    "q": "Which kind of story travels furthest today?",
+    "o": [
+     "The most important ones",
+     "Ones that are strange, funny, frightening or unfair",
+     "Careful reports about new laws"
+    ],
+    "a": 1,
+    "why": "The writer lists them: \"strange, funny, frightening or unfair\". The careful report is given as the opposite example — the one that does not travel."
+   }
+  ]
+ },
+ {
+  "tag": "D",
+  "label": "What the surveys found",
+  "text": "The exact number is hard to measure, but the surveys all point the same way. In a recent one, approximately seven out of ten adults said their phone was where they saw the news first, and among people under twenty-five the figure was higher still. Television has not disappeared, but its audience is mostly older. The same survey found that people spend plenty of time reading headlines and very limited time reading the articles underneath them. Roughly half of those who shared a story admitted that they had never opened it.",
+  "job": "The numbers paragraph. Every figure in it is softened by a careful word — approximately, roughly, mostly — and the last two sentences hold the most uncomfortable finding. Notice the writer admits in the first line that the exact number cannot be known.",
+  "sents": [
+   {
+    "o": "The exact number is hard to measure, but the surveys all point the same way.",
+    "s": "We cannot know the exact number, but all the surveys show the same thing.",
+    "n": "The writer warns you before giving any figure. If a test statement claims an exact number as a fact, this sentence is why it is wrong."
+   },
+   {
+    "o": "In a recent one, approximately seven out of ten adults said their phone was where they saw the news first, and among people under twenty-five the figure was higher still.",
+    "s": "In a recent survey, about seven out of ten adults said they saw the news first on their phone, and the number was even higher for people under twenty-five.",
+    "n": "Two hedges in one sentence: \"approximately\" and \"said\". The survey reports what people say about themselves, which is not the same as what they do."
+   },
+   {
+    "o": "The same survey found that people spend plenty of time reading headlines and very limited time reading the articles underneath them.",
+    "s": "The same survey found people spend a lot of time on headlines and very little time on the articles below them.",
+    "n": "\"Plenty\" and \"limited\" are opposites placed in the same sentence on purpose. Two List 5 words, and the contrast between them is the finding."
+   },
+   {
+    "o": "Roughly half of those who shared a story admitted that they had never opened it.",
+    "s": "About half of the people who shared a story admitted they had never read it.",
+    "n": "\"Admitted\" tells you this is something people were not proud of. \"Roughly\" keeps the figure approximate, like every other number here."
+   }
+  ],
+  "vocab": [
+   {
+    "w": "a survey",
+    "ctx": "In a recent one, approximately seven out of ten adults said their phone was where they saw the news first…",
+    "o": [
+     "a study that asks many people questions",
+     "a government law",
+     "a type of newspaper"
+    ],
+    "a": 0,
+    "why": "Adults \"said\" something, and the result is a proportion — seven out of ten. Asking many people and counting the answers is what a survey is.",
+    "ar": "استطلاع / دراسة مسحية"
+   },
+   {
+    "w": "admitted",
+    "ctx": "Roughly half of those who shared a story admitted that they had never opened it.",
+    "o": [
+     "agreed that something true was not good",
+     "proudly announced",
+     "completely denied"
+    ],
+    "a": 0,
+    "why": "You admit something you would rather not say. If they denied it, the survey would have no figure; if they were proud, the writer would have used a different verb.",
+    "ar": "اعترف / أقرّ"
+   }
+  ],
+  "infer": {
+   "stem": "The same survey found that people spend plenty of time reading headlines and very limited time reading the articles underneath them.",
+   "q": "What does this finding suggest about how people read the news?",
+   "o": [
+    "People read the news more carefully than they used to",
+    "Many people judge a story without reading it",
+    "Headlines are now longer than articles"
+   ],
+   "a": 1,
+   "why": "Lots of time on headlines, very little on articles — and the next sentence says half of sharers never opened the story. Nothing here is about how long headlines are, or about greater care."
+  },
+  "checks": [
+   {
+    "q": "How many adults said they saw the news first on their phone?",
+    "o": [
+     "Approximately seven out of ten",
+     "Exactly seven out of ten",
+     "Roughly half"
+    ],
+    "a": 0,
+    "why": "\"Approximately seven out of ten.\" The word approximately is in the passage, so the exact version is wrong. Roughly half is the figure for people who shared without opening."
+   },
+   {
+    "q": "What did roughly half of sharers admit?",
+    "o": [
+     "That they had never opened the story",
+     "That the story was false",
+     "That they had written the story"
+    ],
+    "a": 0,
+    "why": "\"…admitted that they had never opened it.\" The paragraph says nothing about whether those stories were true or false."
+   }
+  ]
+ },
+ {
+  "tag": "E",
+  "label": "The flooded hospital",
+  "text": "This is where false news does its damage. A story does not have to be true to travel, and a story that makes people angry travels fastest of all. Two years ago a photograph of a flooded hospital was shared more than a million times, with a message asking readers to give money to a charity. The charity was real. The photograph was historical: it had been taken in another country, eight years earlier. The rest of the message was pure invention. Thousands of people were shocked, and grateful to whoever had posted it. Very few of them checked it.",
+  "job": "The example paragraph for false news. Watch the short sentences near the end — after four long ones, the writer uses three short ones in a row, and that is where the point lands.",
+  "sents": [
+   {
+    "o": "A story does not have to be true to travel, and a story that makes people angry travels fastest of all.",
+    "s": "A story can spread without being true, and an angry story spreads fastest.",
+    "n": "The topic sentence of the paragraph. Everything after it is the example that proves it."
+   },
+   {
+    "o": "Two years ago a photograph of a flooded hospital was shared more than a million times, with a message asking readers to give money to a charity.",
+    "s": "Two years ago a photograph of a flooded hospital was shared over a million times, with a message asking for money for a charity.",
+    "n": "Hold on to the details: the photograph, the message, the charity. The next sentences take them apart one at a time."
+   },
+   {
+    "o": "The charity was real. The photograph was historical: it had been taken in another country, eight years earlier.",
+    "s": "The charity really existed. The photograph was old — taken in another country eight years before.",
+    "n": "Part of it was true and part of it was false. That mixture is what makes false news believable, and it is why \"the whole message was false\" would be wrong."
+   },
+   {
+    "o": "Thousands of people were shocked, and grateful to whoever had posted it. Very few of them checked it.",
+    "s": "Thousands of people were shocked and thankful to the person who posted it. Almost nobody checked it.",
+    "n": "Two short sentences to finish. The contrast between \"thousands\" and \"very few\" is the whole paragraph in two numbers."
+   }
+  ],
+  "vocab": [
+   {
+    "w": "historical",
+    "ctx": "The photograph was historical: it had been taken in another country, eight years earlier.",
+    "o": [
+     "from an earlier time",
+     "extremely important",
+     "difficult to see"
+    ],
+    "a": 0,
+    "why": "The colon explains it for you: taken eight years earlier. Everything after a colon in this passage explains what came before it.",
+    "ar": "تاريخي / من زمن سابق"
+   },
+   {
+    "w": "pure invention",
+    "ctx": "The rest of the message was pure invention.",
+    "o": [
+     "completely made up",
+     "partly true",
+     "carefully checked"
+    ],
+    "a": 0,
+    "why": "\"Invention\" is something a person made; \"pure\" here means completely, with nothing else mixed in. Both List 5 meanings of pure — clean, and not mixed — are doing work in this phrase.",
+    "ar": "اختلاق كامل / كذب خالص"
+   }
+  ],
+  "infer": {
+   "stem": "The charity was real. The photograph was historical… The rest of the message was pure invention.",
+   "q": "Why does the writer point out that the charity was real?",
+   "o": [
+    "To show the message was completely false",
+    "To show that false news often mixes true parts with false ones",
+    "To recommend that readers give money to that charity"
+   ],
+   "a": 1,
+   "why": "The writer puts one true detail beside two false ones. If everything had been false, people would have noticed. The passage is explaining why the message worked, not recommending the charity."
+  },
+  "checks": [
+   {
+    "q": "What was wrong with the photograph?",
+    "o": [
+     "It was old and from another country",
+     "It was not a hospital",
+     "The charity in it did not exist"
+    ],
+    "a": 0,
+    "why": "\"…taken in another country, eight years earlier.\" The charity was real — that is stated directly."
+   },
+   {
+    "q": "How did most people react?",
+    "o": [
+     "They checked it carefully",
+     "They were shocked and grateful, and did not check",
+     "They refused to share it"
+    ],
+    "a": 1,
+    "why": "\"Thousands of people were shocked, and grateful… Very few of them checked it.\" The two sentences have to be read together."
+   }
+  ]
+ },
+ {
+  "tag": "F",
+  "label": "What a reader can do",
+  "text": "There are simple things a reader can do, and none of them needs scientific training. Look for the date, because an old photograph is the commonest trick of all. Look for the same story somewhere else, and if it is nowhere else, that silence is information. Ask who gains if you believe it, and who is trying to convince you; that does not take much imagination. A photograph with no source and no date is useless, however strong it looks. None of this takes a minute, but it only works if the reader takes action before sharing, not afterwards.",
+  "job": "The solutions paragraph, and the only one written as instructions. Count the imperatives: Look, Look, Ask. The last sentence adds the condition that makes all three work, and without it the advice is useless.",
+  "sents": [
+   {
+    "o": "There are simple things a reader can do, and none of them needs scientific training.",
+    "s": "A reader can do simple things, and none of them needs any scientific training.",
+    "n": "The writer removes the excuse before giving the advice. \"None of them needs\" tells you this is for everybody."
+   },
+   {
+    "o": "Look for the same story somewhere else, and if it is nowhere else, that silence is information.",
+    "s": "Look for the same story in another place. If no other place has it, that tells you something.",
+    "n": "\"That silence is information\" — the absence of something is itself a clue. This is exactly the thinking behind a Not Given answer."
+   },
+   {
+    "o": "A photograph with no source and no date is useless, however strong it looks.",
+    "s": "A photograph without a source or a date is useless, even if it looks powerful.",
+    "n": "\"However strong it looks\" is a warning: the way a photograph makes you feel is not evidence that it is true."
+   },
+   {
+    "o": "None of this takes a minute, but it only works if the reader takes action before sharing, not afterwards.",
+    "s": "This takes less than a minute, but it only helps if the reader checks before sharing, not after.",
+    "n": "The condition at the end carries the whole paragraph. Checking after you share is too late, and the writer says so without raising their voice."
+   }
+  ],
+  "vocab": [
+   {
+    "w": "a source",
+    "ctx": "A photograph with no source and no date is useless, however strong it looks.",
+    "o": [
+     "where something originally came from",
+     "the size of a picture",
+     "the person in the photograph"
+    ],
+    "a": 0,
+    "why": "It is paired with \"no date\", so it belongs with facts about the photograph's origin. The paragraph has just told you to look for the date and to check who first reported it.",
+    "ar": "مصدر"
+   },
+   {
+    "w": "who gains",
+    "ctx": "Ask who gains if you believe it, and who is trying to convince you…",
+    "o": [
+     "who gets an advantage",
+     "who loses money",
+     "who writes the headline"
+    ],
+    "a": 0,
+    "why": "It sits beside \"who is trying to convince you\". Somebody is trying to persuade you because there is something in it for them — that is what gaining means here.",
+    "ar": "من يستفيد"
+   }
+  ],
+  "infer": {
+   "stem": "…it only works if the reader takes action before sharing, not afterwards.",
+   "q": "What is the writer implying about most readers?",
+   "o": [
+    "Most readers check carefully before they share",
+    "Most readers share first and check later, if at all",
+    "Most readers never share anything"
+   ],
+   "a": 1,
+   "why": "You only need to say \"before, not afterwards\" if people are doing it afterwards. Paragraph D already told you half of sharers never opened the story, which supports the same reading."
+  },
+  "checks": [
+   {
+    "q": "What does the writer say is the commonest trick?",
+    "o": [
+     "An old photograph",
+     "A false name",
+     "A long headline"
+    ],
+    "a": 0,
+    "why": "\"Look for the date, because an old photograph is the commonest trick of all.\" It is also exactly what happened in paragraph E."
+   },
+   {
+    "q": "When should a reader check a story?",
+    "o": [
+     "Before sharing it",
+     "After sharing it",
+     "Only if a friend asks"
+    ],
+    "a": 0,
+    "why": "\"…it only works if the reader takes action before sharing, not afterwards.\" The writer makes the timing the condition for everything else in the paragraph."
+   }
+  ]
+ },
+ {
+  "tag": "G",
+  "label": "Thirty seconds to decide",
+  "text": "So the news is not worse than it was. It is faster, there is far more of it, and one job has quietly moved. Deciding what to trust used to belong to an editor who was trained and paid to do it accurately. From now forward it belongs to a person on a bus, holding a phone, with thirty seconds to decide. Whether we are ready for that is still a mystery.",
+  "job": "The closing paragraph refuses the easy ending. It starts by saying the news is not worse, describes what has actually changed, and then ends on a question rather than an answer. That last sentence is the most careful one in the passage.",
+  "sents": [
+   {
+    "o": "It is faster, there is far more of it, and one job has quietly moved.",
+    "s": "It is faster, there is much more of it, and one job has moved without anyone noticing.",
+    "n": "\"Quietly\" does a lot of work: the change happened without being announced. The rest of the paragraph explains which job moved, and where."
+   },
+   {
+    "o": "Deciding what to trust used to belong to an editor who was trained and paid to do it accurately.",
+    "s": "Deciding what to trust was once the editor's job, and the editor was trained and paid to do it well.",
+    "n": "\"Trained and paid\" are the two things the new decider does not have. The writer never says that out loud — you are left to notice it."
+   },
+   {
+    "o": "From now forward it belongs to a person on a bus, holding a phone, with thirty seconds to decide.",
+    "s": "From now on it is the job of a person on a bus with a phone and thirty seconds.",
+    "n": "The picture is doing the arguing. Put it beside \"trained and paid\" in the sentence before and you have the writer's point without a single opinion word."
+   },
+   {
+    "o": "Whether we are ready for that is still a mystery.",
+    "s": "We do not know yet whether we are ready for it.",
+    "n": "The passage ends without answering its own question. Any test statement that says we ARE or ARE NOT ready would be Not Given."
+   }
+  ],
+  "vocab": [
+   {
+    "w": "quietly",
+    "ctx": "…and one job has quietly moved.",
+    "o": [
+     "without noise, so nobody noticed",
+     "very slowly over many years",
+     "in a way that upset people"
+    ],
+    "a": 0,
+    "why": "A job cannot make a sound, so this is not about noise in the ordinary sense. It means the change happened without anyone announcing or noticing it.",
+    "ar": "بهدوء / دون أن يلاحظ أحد"
+   },
+   {
+    "w": "belongs to",
+    "ctx": "Deciding what to trust used to belong to an editor… From now forward it belongs to a person on a bus…",
+    "o": [
+     "is the responsibility of",
+     "is owned as property by",
+     "is enjoyed by"
+    ],
+    "a": 0,
+    "why": "What belongs to them is a job — deciding what to trust. A job that belongs to you is one you are responsible for, not one you own or enjoy.",
+    "ar": "يقع على عاتق / من مسؤولية"
+   }
+  ],
+  "infer": {
+   "stem": "Whether we are ready for that is still a mystery.",
+   "q": "If a test statement said \"The writer believes readers are not ready to judge the news\", what would the answer be?",
+   "o": [
+    "True — the writer says readers cannot do it",
+    "False — the writer says readers are ready",
+    "Not Given — the writer deliberately leaves the question open"
+   ],
+   "a": 2,
+   "why": "\"Still a mystery\" means the writer is not answering. The paragraph gives you reasons to worry — thirty seconds, no training — but it never states a conclusion, and you must not finish the writer's sentence for them."
+  },
+  "checks": [
+   {
+    "q": "According to the writer, is the news worse than it was?",
+    "o": [
+     "Yes, much worse",
+     "No — it is faster and there is more of it, but one job has moved",
+     "The writer does not mention it"
+    ],
+    "a": 1,
+    "why": "\"So the news is not worse than it was.\" The writer states this directly in the first sentence and then explains what did change."
+   },
+   {
+    "q": "Whose job is it now to decide what to trust?",
+    "o": [
+     "The editor's",
+     "The reader's",
+     "The news channel's"
+    ],
+    "a": 1,
+    "why": "\"From now forward it belongs to a person on a bus, holding a phone\" — that person is the reader. The editor used to do it."
+   }
+  ]
+ }
+];
+const PHASES = [{"n":"1","name":"Engage","sub":"Words you already know","mins":"8 minutes"},{"n":"2","name":"Explore","sub":"Read it once, decide what each paragraph does","mins":"12 minutes"},{"n":"3","name":"Explain","sub":"Dissect your paragraph, five stages","mins":"20 minutes"},{"n":"4","name":"Extend","sub":"Build the routine, then use it here","mins":"12 minutes"},{"n":"5","name":"Evaluate","sub":"What you can do, and what is next","mins":"8 minutes"}];
+const WORDS = [["forecast","noun"],["approach","verb"],["previously","adverb"],["approximately","adverb"],["exact","adjective"],["plenty","quantifier"],["limited","adjective"],["mostly","adverb"],["shocked","adjective"],["grateful","adjective"],["charity","noun"],["historical","adjective"],["pure","adjective"],["convince","verb"],["in favour of","phrase"],["nowhere","adverb"],["useless","adjective"],["imagination","noun"],["take action","idiom"],["mystery","noun"]];
+const GOALS = ["Work out what a paragraph is DOING, not just what it says","Turn a long sentence into simple English without losing the meaning","Guess a new word from the words around it","Notice how sure the writer is (suggests / certainly / nobody knows)","Tell the difference between False and Not Given"];
+const DIAGRAM = [{"id":0,"label":"Look for the date","short":"the date"},{"id":1,"label":"Look for the same story somewhere else","short":"another report"},{"id":2,"label":"Ask who gains, and who is trying to convince you","short":"who gains"},{"id":3,"label":"Only now — share it","short":"sharing"}];
+const STAGES = ["Read it","Break it down","Guess the word","Read between the lines","Check yourself"];
+const APP_ID = "dissecting-thirty-seconds";
+const L = ["A","B","C","D"];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let view = 0;        // 0-4 = phases, 5 = help
+let pIdx = 0;        // paragraph index inside Explain
+let stage = 0;
+let arabic = false;
+let dgStep = 0;      // how many diagram parts placed
+const st = {
+  ans:{},            // id -> {picked, ok, tries}
+  opened:{},         // sentence cards opened
+  text:{},           // free-writing boxes
+  goals:[],          // chosen lesson goals
+  self:{},           // self-rating per stage
+  dg:0               // diagram progress
+};
+
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const key = (p,type,i) => p+"-"+type+(i===undefined?"":i);
+
+function itemKeys(p){
+  const par = DATA[p], ks = [];
+  par.vocab.forEach((_,i)=>ks.push(key(p,"v",i)));
+  ks.push(key(p,"i"));
+  par.checks.forEach((_,i)=>ks.push(key(p,"c",i)));
+  return ks;
+}
+function paraDone(p){ return itemKeys(p).every(k=>st.ans[k] && st.ans[k].ok); }
+function stageDone(p,s){
+  if(s===0) return !!st.opened["job-"+p];
+  if(s===1) return DATA[p].sents.every((_,i)=>st.opened["s-"+p+"-"+i]);
+  if(s===2) return DATA[p].vocab.every((_,i)=>{ const a=st.ans[key(p,"v",i)]; return a&&a.ok; });
+  if(s===3){ const a=st.ans[key(p,"i")]; return a&&a.ok; }
+  return DATA[p].checks.every((_,i)=>{ const a=st.ans[key(p,"c",i)]; return a&&a.ok; });
+}
+function points(){ let t=0; for(const k in st.ans){ const a=st.ans[k]; if(a.ok) t += a.tries===1?10:(a.tries===2?6:3); } return t + st.dg*5; }
+function answered(){ let n=0; for(const k in st.ans) if(st.ans[k].ok) n++; return n; }
+function totalItems(){ let n=0; DATA.forEach((_,p)=>n+=itemKeys(p).length); return n; }
+function parasDone(){ let n=0; DATA.forEach((_,p)=>{ if(paraDone(p)) n++; }); return n; }
+function firstTry(){ let n=0; for(const k in st.ans) if(st.ans[k].ok && st.ans[k].tries===1) n++; return n; }
+
+/* ============================================================
+   SHARED QUESTION RENDERING
+   ============================================================ */
+function optionsHTML(id, opts, saved){
+  const reveal = saved && (saved.ok || saved.tries>=2);
+  return opts.map((o,i)=>{
+    let cls = "opt";
+    if(saved && saved.picked!==undefined){
+      if(reveal && i===saved.correctIdx) cls += " right";
+      else if(i===saved.picked && !saved.ok) cls += " wrong";
+    }
+    return "<button class='"+cls+"' data-q='"+id+"' data-i='"+i+"'"+((saved&&saved.ok)?" disabled":"")+
+           "><span class='k'>"+L[i]+"</span>"+o+"</button>";
+  }).join("");
+}
+function qBlock(id, num, stem, ctx, opts, correctIdx, why, ar){
+  const a = st.ans[id];
+  let h = "<div class='qcard' id='card-"+id+"' data-correct='"+correctIdx+"'>";
+  h += "<div class='qnum'>"+num+"</div><div class='stem'>"+stem+"</div>";
+  if(ctx) h += "<div class='ctx'>"+ctx+"</div>";
+  h += "<div class='opts'>"+optionsHTML(id,opts,a?{picked:a.picked,ok:a.ok,tries:a.tries,correctIdx}:null)+"</div>";
+  let fb = "";
+  if(a && a.ok) fb = "<b>Correct</b>"+why;
+  else if(a && a.tries>=2) fb = "<b>Not that one either — here is the thinking</b>"+why;
+  else if(a) fb = "<b>Not quite</b>Read the words on either side of it once more, then choose again.";
+  h += "<div class='fb "+(a&&a.ok?"good":"bad")+(a?" show":"")+"'>"+fb+"</div>";
+  if(ar) h += "<div class='ar"+(arabic?" show":"")+"'>"+ar+"</div>";
+  return h + "</div>";
+}
+function onAnswer(btn){
+  const id = btn.dataset.q, i = +btn.dataset.i;
+  const correct = +btn.closest(".qcard").dataset.correct;
+  const prev = st.ans[id] || {tries:0};
+  if(prev.ok) return;
+  const ok = i === correct;
+  st.ans[id] = { picked:i, ok, tries:prev.tries+1 };
+  if(ok) burst(10);
+  render();
+  const c = document.getElementById("card-"+id);
+  if(c && c.scrollIntoView) c.scrollIntoView({block:"nearest"});
+}
+
+/* ============================================================
+   HEADER + SIDEBAR
+   ============================================================ */
+function renderHeader(){
+  $("#pts").textContent = points();
+  $("#pdone").textContent = parasDone()+"/"+DATA.length;
+  $$(".tab").forEach(t=>t.classList.toggle("active", +t.dataset.view===view));
+}
+function renderSide(){
+  const side = $("#side"), mainEl = document.querySelector("main");
+  mainEl.classList.toggle("full", view!==2);
+  if(view!==2){ side.style.display="none"; return; }
+  side.style.display="block";
+  let h = "<h3>Paragraph</h3><p class='ptitle'>Thirty Seconds to Decide</p><div class='plist'>";
+  DATA.forEach((p,i)=>{
+    h += "<button class='pitem"+(i===pIdx?" active":"")+"' data-p='"+i+"'><span class='tag'>"+p.tag+"</span>"+
+         esc(p.label)+(paraDone(i)?"<span class='done'>&#10003;</span>":"")+"</button>";
+  });
+  h += "</div>";
+  const pc = Math.round(answered()/totalItems()*100);
+  h += "<div class='bar'><span style='width:"+pc+"%'></span></div><div class='barlbl'>"+answered()+" of "+totalItems()+" answered</div>";
+  side.innerHTML = h;
+  $$(".pitem").forEach(b=>b.onclick=()=>{ pIdx=+b.dataset.p; stage=0; render(); });
+}
+
+/* ============================================================
+   PHASE HEAD
+   ============================================================ */
+function phaseHead(i){
+  const p = PHASES[i];
+  return "<div class='phasehead'><div class='n'>"+p.n+"</div><div><h2>"+p.name+" &mdash; "+p.sub+"</h2>"+
+         "<p>Thirty Seconds to Decide &middot; B1+ List 5</p></div><div class='mins'>"+p.mins+"</div></div>";
+}
+function tbox(id, label, ph){
+  const v = st.text[id] || "";
+  return "<p class='instr' style='background:#fff;border:0;padding:0;margin:0 0 6px'><b>"+label+"</b>"+
+         (v?"<span class='saved'>saved</span>":"")+"</p>"+
+         "<textarea class='tbox' data-t='"+id+"' placeholder='"+ph+"'>"+esc(v)+"</textarea>";
+}
+
+/* ============================================================
+   1 ENGAGE
+   ============================================================ */
+function engageHTML(){
+  let h = phaseHead(0) + "<div class='body'>";
+  h += "<p class='instr'><b>You are not starting from zero.</b> All twenty of these words are from List 5, and every one of them is somewhere in today's text. You learnt them last lesson.</p>";
+  h += "<div class='wordgrid'>"+WORDS.map(w=>"<div class='wcard'>"+esc(w[0])+"<small>"+esc(w[1])+"</small></div>").join("")+"</div>";
+  h += tbox("predict","In your pair: from these words only, what do you think the text is about? Write one sentence.","We think the text is about…");
+  h += "<div style='height:18px'></div>";
+  h += "<div class='passage' style='font-size:22px;text-align:center;padding:22px'>Thirty Seconds to Decide</div>";
+  h += "<p class='hint' style='margin:8px 0 18px'>That is the title. Thirty seconds to decide what, and who has only thirty seconds? Were you close?</p>";
+  h += tbox("title","What do you think the title means?","Thirty seconds to decide…");
+  h += "<div style='height:22px'></div>";
+  h += "<p class='instr'><b>Now choose what WE are working on today.</b> Tick the ones your pair most needs. Your choice comes back at the end of the lesson, and you will decide whether you met it.</p>";
+  h += "<div class='goalpick'>"+GOALS.map((g,i)=>"<button class='gp"+(st.goals.indexOf(i)>=0?" on":"")+"' data-g='"+i+"'>"+esc(g)+"</button>").join("")+"</div>";
+  h += tbox("owngoal","Or write your own goal for today:","By the end of this lesson I want to…");
+  h += "</div>";
+  h += "<div class='navrow'><span class='sp'></span><button class='btn' data-go='1'>Next: Explore &rarr;</button></div>";
+  return h;
+}
+
+/* ============================================================
+   2 EXPLORE
+   ============================================================ */
+function exploreHTML(){
+  let h = phaseHead(1) + "<div class='body'>";
+  h += "<p class='instr'><b>Read the whole text once, quickly.</b> Do not stop at words you do not know. Then take your paragraph and decide, with your partner, what job it is doing &mdash; before the app tells you anything.</p>";
+  h += "<div class='hlbar'><button class='mini' id='hlOn'>Highlight on</button><button class='mini ghost' id='hlClear'>Clear highlighting</button>"+
+       "<span class='hint'>Select any words in the text, then press Highlight on.</span></div>";
+  h += "<div class='passage' id='passage'>";
+  DATA.forEach(p=>{ h += "<div class='para'><span class='plab'>"+p.tag+"</span>"+esc(p.text)+"</div>"; });
+  h += "</div><div style='height:20px'></div>";
+  h += "<p class='instr'><b>What job is each paragraph doing?</b> Write your pair's answer for your own paragraph at least. One short line: is it the change, the example, the numbers, the warning, the advice, the conclusion?</p>";
+  DATA.forEach((p,i)=>{
+    const v = st.text["job-"+i] || "";
+    h += "<div class='jobrow'><div class='t'>"+p.tag+"</div><textarea class='tbox' style='min-height:50px' data-t='job-"+i+"' placeholder='Paragraph "+p.tag+" is…'>"+esc(v)+"</textarea></div>";
+  });
+  h += "<div style='height:16px'></div>";
+  h += tbox("question","One question your pair wants answered by the end of the lesson:","We want to know…");
+  h += "</div>";
+  h += "<div class='navrow'><button class='btn ghost' data-go='0'>&larr; Engage</button><span class='sp'></span><button class='btn' data-go='2'>Next: Explain &rarr;</button></div>";
+  return h;
+}
+function wireHighlighter(){
+  const box = $("#passage"); if(!box) return;
+  const on = $("#hlOn");
+  if(on) on.onclick = () => {
+    const sel = window.getSelection();
+    if(!sel || sel.isCollapsed || sel.rangeCount===0) return;
+    const r = sel.getRangeAt(0);
+    if(!box.contains(r.commonAncestorContainer)) return;
+    try{
+      const m = document.createElement("mark"); m.className="hl";
+      m.appendChild(r.extractContents()); r.insertNode(m);
+      sel.removeAllRanges();
+    }catch(e){ /* selection spans elements — ignore, text is never altered */ }
+  };
+  const cl = $("#hlClear");
+  if(cl) cl.onclick = () => {
+    Array.from(box.querySelectorAll("mark.hl")).forEach(m=>{
+      const t = document.createTextNode(m.textContent);
+      m.parentNode.replaceChild(t, m);
+    });
+    box.normalize();
+  };
+}
+
+/* ============================================================
+   3 EXPLAIN — the dissection
+   ============================================================ */
+function explainHTML(){
+  const par = DATA[pIdx];
+  let h = phaseHead(2);
+  h += "<div class='phead'><p class='kicker'>Paragraph "+par.tag+" of "+DATA.length+"</p><h2>"+esc(par.label)+"</h2></div>";
+  h += "<div class='stages'>"+STAGES.map((s,i)=>
+       "<button class='stg"+(i===stage?" active":"")+(stageDone(pIdx,i)?" ok":"")+"' data-s='"+i+"'>"+(i+1)+". "+s+"</button>").join("")+"</div>";
+  h += "<div class='body'>";
+
+  if(stage===0){
+    h += "<p class='instr'><b>Read it twice.</b> Once straight through with no stopping. Then again, asking one question only: what job is this paragraph doing in the passage?</p>";
+    h += "<div class='passage'>"+esc(par.text)+"</div>";
+    const mine = st.text["job-"+pIdx];
+    if(mine) h += "<div class='mypred' style='margin-top:14px'><b>WHAT YOUR PAIR WROTE IN EXPLORE</b>"+esc(mine)+"</div>";
+    h += "<div style='height:6px'></div><p class='hint'>Talk about it with your partner and your teacher first. Only then press the button.</p>";
+    if(st.opened["job-"+pIdx]){
+      h += "<div class='fb good show'><b>What this paragraph is doing</b>"+par.job+"</div>";
+    } else {
+      h += "<button class='btn amber' id='showJob'>Show me what this paragraph is doing</button>";
+    }
+  }
+
+  if(stage===1){
+    h += "<p class='instr'><b>Say it in simple English first.</b> Read each sentence, say your own simple version out loud, then open the card and compare. Keep the careful words &mdash; if you drop them, you change the meaning.</p>";
+    par.sents.forEach((s,i)=>{
+      const open = st.opened["s-"+pIdx+"-"+i];
+      h += "<div class='scard"+(open?" open":"")+"'><div class='orig'>"+esc(s.o)+"</div>";
+      h += "<div class='rev'><span class='lab'>IN SIMPLE ENGLISH</span><p class='simple'>"+esc(s.s)+"</p><p class='note'>"+s.n+"</p></div>";
+      if(!open) h += "<button class='mini' data-open='s-"+pIdx+"-"+i+"'>Compare with a simple version</button>";
+      h += "</div>";
+    });
+  }
+
+  if(stage===2){
+    h += "<p class='instr'><b>No dictionary.</b> Look at the words on either side, make a guess, then choose. Afterwards, tell your partner which clue helped you.</p>";
+    par.vocab.forEach((v,i)=>{
+      h += qBlock(key(pIdx,"v",i), "WORD "+(i+1), "What does <b>"+esc(v.w)+"</b> mean here?",
+                  esc(v.ctx), v.o, v.a, v.why, v.ar);
+    });
+  }
+
+  if(stage===3){
+    h += "<p class='instr'><b>What is the writer really saying?</b> Understanding every word is not enough here. Look at how strong the claim is, and who is making it.</p>";
+    const v = par.infer;
+    h += qBlock(key(pIdx,"i"), "BETWEEN THE LINES", esc(v.q), esc(v.stem), v.o, v.a, v.why, null);
+  }
+
+  if(stage===4){
+    h += "<p class='instr'><b>Now check yourself.</b> You may look back at the paragraph &mdash; this is practice, not a test.</p>";
+    par.checks.forEach((c,i)=>{
+      h += qBlock(key(pIdx,"c",i), "CHECK "+(i+1), esc(c.q), null, c.o, c.a, c.why, null);
+    });
+    if(paraDone(pIdx)) h += "<div class='fb good show'><b>Paragraph "+par.tag+" is dissected</b>Now you can explain this paragraph to another pair. That is the real test.</div>";
+  }
+
+  h += "</div>";
+  h += "<div class='navrow'>";
+  h += "<button class='btn ghost' id='prevStage'"+(stage===0&&pIdx===0?" disabled":"")+">&larr; Back</button>";
+  h += "<span class='sp'></span><span class='hint'>Stage "+(stage+1)+" of 5</span><span class='sp'></span>";
+  h += "<button class='btn' id='nextStage'>"+(stage<4?"Next stage &rarr;":(pIdx<DATA.length-1?"Next paragraph &rarr;":"Go to Extend &rarr;"))+"</button>";
+  h += "</div>";
+  return h;
+}
+
+/* ============================================================
+   4 EXTEND
+   ============================================================ */
+function diagramSVG(n){
+  const show = i => n > i;
+  const step = (i,y,txt) => show(i) ?
+    "<g><rect x='54' y='"+y+"' width='192' height='34' rx='7' fill='#EDF0F8' stroke='#2E4A9E' stroke-width='2'/>"+
+    "<circle cx='72' cy='"+(y+17)+"' r='10' fill='#2E4A9E'/>"+
+    "<text x='72' y='"+(y+21)+"' font-size='12' font-weight='bold' text-anchor='middle' fill='#fff' font-family='sans-serif'>"+(i+1)+"</text>"+
+    "<text x='90' y='"+(y+21)+"' font-size='11.5' fill='#141A2E' font-family='sans-serif'>"+txt+"</text></g>"+
+    (i<3 ? "<path d='M150 "+(y+34)+" L150 "+(y+48)+"' stroke='#A3ACC6' stroke-width='2' marker-end='url(#ar)'/>" : "")
+    : "";
+  return "<svg viewBox='0 0 300 300' width='100%' height='300' role='img' aria-label='Check the date, check another report, ask who gains, then share'>"+
+    "<defs><marker id='ar' markerWidth='8' markerHeight='8' refX='4' refY='4' orient='auto'>"+
+    "<path d='M0 0 L8 4 L0 8 z' fill='#A3ACC6'/></marker></defs>"+
+    "<rect x='0' y='0' width='300' height='300' fill='#FBFAFD'/>"+
+    /* the story arriving on a phone */
+    "<rect x='98' y='8' width='104' height='34' rx='6' fill='#16213E'/>"+
+    "<text x='150' y='29' font-size='11.5' text-anchor='middle' fill='#fff' font-family='sans-serif'>a story arrives</text>"+
+    "<path d='M150 42 L150 56' stroke='#A3ACC6' stroke-width='2' marker-end='url(#ar)'/>"+
+    step(0,58,"Look for the date") +
+    step(1,116,"Is anyone else reporting it?") +
+    step(2,174,"Who gains if you believe it?") +
+    (show(3) ? "<rect x='54' y='232' width='192' height='38' rx='7' fill='#1E7A5F'/>"+
+      "<text x='150' y='256' font-size='13' font-weight='bold' text-anchor='middle' fill='#fff' font-family='sans-serif'>Only now — share it</text>" : "")+
+    (n===0?"<text x='150' y='150' font-size='13' text-anchor='middle' fill='#5C6584' font-family='sans-serif'>Choose the first check &rarr;</text>":"")+
+    "</svg>";
+}
+function extendHTML(){
+  let h = phaseHead(3) + "<div class='body'>";
+  h += "<p class='instr'><b>Build the routine.</b> Paragraph F gives the reader three checks, and says when to share. Click them in the order the paragraph gives them &mdash; the flow is drawn as you get them right.</p>";
+  h += "<div class='dgwrap'><div class='parts'>";
+  const shuffled = [2,0,3,1];   /* fixed display order, not the answer order */
+  shuffled.forEach(i=>{
+    const d = DIAGRAM[i], placed = d.id < st.dg;
+    h += "<button class='part' data-dg='"+d.id+"'"+(placed?" disabled":"")+">"+(placed?(d.id+1)+". ":"")+esc(d.label)+(placed?" &#10003;":"")+"</button>";
+  });
+  h += "</div><div class='dgbox'>"+diagramSVG(st.dg)+"</div></div>";
+  if(st.dg>=4) h += "<div class='fb good show'><b>That is the whole routine</b>Date &rarr; another report &rarr; who gains &rarr; share. Paragraph F says it takes less than a minute, and that it only works <i>before</i> you share, not afterwards.</div>";
+  h += "<div style='height:24px'></div>";
+  h += "<p class='instr'><b>Now take it out of the text.</b> You have all seen this happen in a family group or a class group.</p>";
+  h += tbox("uae","Think of a story that was shared in your family group or class group and turned out not to be true. Which of the three checks in paragraph F would have caught it?","The story was… and the check that would have caught it is…");
+  h += "<div style='height:16px'></div>";
+  h += tbox("who","Paragraph G says the job of deciding what to trust has moved from the editor to the reader. Is that a good thing? Give one reason from the passage and one from your own life.","It is good / not good because…");
+  h += "<div style='height:16px'></div>";
+  h += "<p class='instr'><b>Write a trap.</b> Write one statement about this passage that is <b>Not Given</b> &mdash; something that sounds true, that the passage never actually says. Swap with another pair and test them.</p>";
+  h += tbox("trap","Your Not Given statement:","The passage never says that…");
+  h += "</div>";
+  h += "<div class='navrow'><button class='btn ghost' data-go='2'>&larr; Explain</button><span class='sp'></span><button class='btn' data-go='4'>Next: Evaluate &rarr;</button></div>";
+  return h;
+}
+
+/* ============================================================
+   5 EVALUATE
+   ============================================================ */
+function stageScore(s){
+  let got=0, tot=0;
+  DATA.forEach((par,p)=>{
+    if(s===2) par.vocab.forEach((_,i)=>{ tot++; const a=st.ans[key(p,"v",i)]; if(a&&a.ok&&a.tries===1) got++; });
+    if(s===3){ tot++; const a=st.ans[key(p,"i")]; if(a&&a.ok&&a.tries===1) got++; }
+    if(s===4) par.checks.forEach((_,i)=>{ tot++; const a=st.ans[key(p,"c",i)]; if(a&&a.ok&&a.tries===1) got++; });
+    if(s===0){ tot++; if(st.opened["job-"+p]) got++; }
+    if(s===1) par.sents.forEach((_,i)=>{ tot++; if(st.opened["s-"+p+"-"+i]) got++; });
+  });
+  return {got, tot, pc: tot? Math.round(got/tot*100):0};
+}
+function evaluateHTML(){
+  let h = phaseHead(4) + "<div class='body'>";
+  const done = parasDone(), pc = Math.round(answered()/totalItems()*100);
+  h += "<div class='grid2'>";
+  h += "<div class='stat'><div class='n'>"+points()+"</div><div class='l'>points</div></div>";
+  h += "<div class='stat'><div class='n'>"+done+" / "+DATA.length+"</div><div class='l'>paragraphs fully dissected</div></div>";
+  h += "<div class='stat'><div class='n'>"+answered()+" / "+totalItems()+"</div><div class='l'>questions answered correctly</div></div>";
+  h += "<div class='stat'><div class='n'>"+firstTry()+"</div><div class='l'>right on the first try</div></div>";
+  h += "</div>";
+
+  h += "<h3 style='margin:22px 0 8px'>Which stage is your weakest?</h3>";
+  const scores = STAGES.map((_,i)=>stageScore(i));
+  const worst = scores.reduce((w,s,i)=> s.pc < scores[w].pc ? i : w, 0);
+  h += "<div class='bars5'>";
+  STAGES.forEach((s,i)=>{
+    h += "<div class='b5"+(i===worst&&scores[i].pc<100?" weak":"")+"'><span>"+(i+1)+". "+s+"</span>"+
+         "<span class='track'><i style='width:"+scores[i].pc+"%'></i></span><span>"+scores[i].pc+"%</span></div>";
+  });
+  h += "</div>";
+  if(scores[worst].pc < 100)
+    h += "<p class='hint' style='margin-top:10px'>Your lowest bar is <b>"+STAGES[worst]+"</b>. That is the stage to do first in the next text.</p>";
+
+  h += "<h3 style='margin:24px 0 8px'>Rate yourself &mdash; honestly</h3>";
+  h += "<p class='hint' style='margin:0 0 12px'>1 = I still cannot do this alone &nbsp;·&nbsp; 5 = I could show someone else how</p>";
+  h += "<div class='selfgrid'>";
+  STAGES.forEach((s,i)=>{
+    h += "<div>"+(i+1)+". "+s+"</div><div class='stars'>"+
+         [1,2,3,4,5].map(n=>"<button class='star"+((st.self[i]||0)>=n?" on":"")+"' data-self='"+i+"' data-n='"+n+"'>"+n+"</button>").join("")+"</div>";
+  });
+  h += "</div>";
+
+  if(st.goals.length || st.text.owngoal){
+    h += "<h3 style='margin:24px 0 8px'>What you said you wanted at the start</h3>";
+    h += "<div class='mypred'><b>YOUR GOAL FROM THE ENGAGE PHASE</b>"+
+         st.goals.map(i=>"&bull; "+esc(GOALS[i])).join("<br>")+
+         (st.text.owngoal?"<br>&bull; "+esc(st.text.owngoal):"")+"</div>";
+    h += tbox("met","Did you meet it? What is the evidence from today?","I can now…");
+  }
+  if(st.text.question){
+    h += "<div class='mypred' style='margin-top:14px'><b>THE QUESTION YOUR PAIR ASKED IN EXPLORE</b>"+esc(st.text.question)+"</div>";
+    h += tbox("answered","Is it answered now?","Yes / no, because…");
+  }
+
+  h += "<h3 style='margin:24px 0 8px'>Certificate</h3>";
+  if(done >= 1){
+    h += "<p class='hint'>Type your name, then print or save as PDF.</p>";
+    h += "<div id='cert' class='show'><h3>Certificate of Close Reading</h3>"+
+         "<p style='margin:2px 0 0;font-size:14px;color:#5C6584'>Thirty Seconds to Decide &middot; B1+ List 5</p>"+
+         "<div class='nm'><input id='nameIn' placeholder='your name' value='"+esc(st.text.name||"")+"'></div>"+
+         "<p style='margin:0;font-size:15px'>dissected <b>"+done+"</b> of "+DATA.length+" paragraphs, five stages each,<br>and scored <b>"+points()+"</b> points.</p>"+
+         "<div class='sig'>Designed by: Nazila Motahari &middot; General Studies, English Communications</div></div>";
+    h += "<div style='height:12px'></div><button class='btn ghost' id='printCert'>Print this certificate</button>";
+  } else {
+    h += "<p class='hint'>Finish all five stages of at least one paragraph to unlock your certificate.</p>";
+  }
+
+  h += "<div class='fb good show' style='margin-top:22px'><b>Before you close this page</b>Press Save in the top bar to download your file. It carries your writing, your answers and your self-rating &mdash; send it to your teacher, or press Load next lesson to carry on. Nothing is stored in the browser.</div>";
+  h += "</div>";
+  h += "<div class='navrow'><button class='btn ghost' data-go='3'>&larr; Extend</button><span class='sp'></span><button class='btn' id='saveBtn2'>Save my file</button></div>";
+  return h;
+}
+
+/* ============================================================
+   HELP
+   ============================================================ */
+function helpHTML(){
+  return "<div class='phead'><p class='kicker'>For students and teachers</p><h2>How to use this lesson</h2></div><div class='body'>"+
+  "<p class='instr'><b>This is not a test.</b> It is the slow version of reading. You take one paragraph and work through it five times, each time looking for something different.</p>"+
+  "<table class='res'>"+
+  "<tr><th>Stage</th><th>What you do</th><th>Why it helps in the exam</th></tr>"+
+  "<tr><td>1. Read it</td><td>Read the paragraph twice without stopping, say what job it does, then check.</td><td>Matching Headings depends on knowing a paragraph's purpose, not its details.</td></tr>"+
+  "<tr><td>2. Break it down</td><td>Turn each long sentence into simple English, then compare with the version given.</td><td>Long sentences are where most Band 5&ndash;6 readers lose the meaning.</td></tr>"+
+  "<tr><td>3. Guess the word</td><td>Work out a difficult word from the words around it.</td><td>There is no dictionary in the exam, and every passage has words you have never seen.</td></tr>"+
+  "<tr><td>4. Read between the lines</td><td>Decide what a sentence implies and how strong the claim is.</td><td>True / False / Not Given is decided by exactly this.</td></tr>"+
+  "<tr><td>5. Check yourself</td><td>Answer two questions with the paragraph still in front of you.</td><td>Mistakes get fixed here instead of spreading into the next paragraph.</td></tr>"+
+  "</table>"+
+  "<h3 style='margin:22px 0 6px'>The five phases across the top</h3>"+
+  "<p>The tabs follow the lesson: <b>Engage</b> (words you already know), <b>Explore</b> (read once, decide what each paragraph does), <b>Explain</b> (the dissection), <b>Extend</b> (build the system, apply it here), <b>Evaluate</b> (what you can do and what is next). You can move between them freely.</p>"+
+  "<h3 style='margin:22px 0 6px'>For the teacher</h3>"+
+  "<p>Seven paragraphs, five stages each, 35 scored items. In a 60-minute lesson, give each pair one paragraph in Explain and have them teach it to the class &mdash; do not try to dissect all seven with the whole group. "+
+  "Students press <b>Save</b> to download a JSON file containing their writing, answers and self-ratings; collect those to see the class pattern. The reading test this prepares them for is the List 5 reading paper on this same passage.</p>"+
+  "<p class='hint'>Points: 10 for a first-try answer, 6 on the second try, 3 after that, and 5 for each step of the checking routine placed in the right order.</p>"+
+  "</div>";
+}
+
+/* ============================================================
+   RENDER + WIRE
+   ============================================================ */
+function renderPanel(){
+  const p = $("#panel");
+  if(view===0) p.innerHTML = engageHTML();
+  else if(view===1) p.innerHTML = exploreHTML();
+  else if(view===2) p.innerHTML = explainHTML();
+  else if(view===3) p.innerHTML = extendHTML();
+  else if(view===4) p.innerHTML = evaluateHTML();
+  else p.innerHTML = helpHTML();
+  wirePanel();
+}
+function wirePanel(){
+  $$("[data-go]").forEach(b=>b.onclick=()=>{ view=+b.dataset.go; window.scrollTo(0,0); render(); });
+  $$("textarea[data-t]").forEach(t=>{
+    t.oninput = () => { st.text[t.dataset.t] = t.value; };
+    t.onblur  = () => { renderHeader(); };
+  });
+  $$("[data-g]").forEach(b=>b.onclick=()=>{
+    const i = +b.dataset.g, at = st.goals.indexOf(i);
+    if(at>=0) st.goals.splice(at,1); else st.goals.push(i);
+    render();
+  });
+  wireHighlighter();
+  const sj = $("#showJob"); if(sj) sj.onclick = () => { st.opened["job-"+pIdx] = true; render(); };
+  $$("[data-open]").forEach(b=>b.onclick=()=>{ st.opened[b.dataset.open]=true; render(); });
+  $$(".opt").forEach(b=>b.onclick=()=>onAnswer(b));
+  $$(".stg").forEach(b=>b.onclick=()=>{ stage=+b.dataset.s; render(); });
+  const ps = $("#prevStage"); if(ps) ps.onclick = () => {
+    if(stage>0) stage--; else if(pIdx>0){ pIdx--; stage=4; }
+    window.scrollTo(0,0); render();
+  };
+  const ns = $("#nextStage"); if(ns) ns.onclick = () => {
+    if(stage<4) stage++;
+    else if(pIdx<DATA.length-1){ pIdx++; stage=0; }
+    else { view=3; }
+    window.scrollTo(0,0); render();
+  };
+  $$("[data-dg]").forEach(b=>b.onclick=()=>{
+    const i = +b.dataset.dg;
+    if(i === st.dg){ st.dg++; burst(8); render(); }
+    else {
+      b.classList.add("wrong");
+      const box = b.closest(".dgwrap");
+      let w = box.querySelector(".fb.dgfb");
+      if(!w){ w = document.createElement("div"); w.className="fb bad show dgfb"; box.parentNode.insertBefore(w, box.nextSibling); }
+      w.innerHTML = "<b>Not next</b>Read paragraph F again and follow the order it gives: what comes after "+
+        (st.dg===0?"the story arrives?":DIAGRAM[st.dg-1].short+"?");
+    }
+  });
+  $$("[data-self]").forEach(b=>b.onclick=()=>{ st.self[+b.dataset.self] = +b.dataset.n; render(); });
+  const ni = $("#nameIn"); if(ni) ni.oninput = () => { st.text.name = ni.value; };
+  const pc = $("#printCert"); if(pc) pc.onclick = () => {
+    document.body.classList.add("certonly"); window.print();
+    setTimeout(()=>document.body.classList.remove("certonly"), 400);
+  };
+  const s2 = $("#saveBtn2"); if(s2) s2.onclick = saveFile;
+}
+function render(){ renderHeader(); renderSide(); renderPanel(); }
+
+/* ---------- confetti ---------- */
+function burst(n){
+  const cols = ["#F2635B","#2E4A9E","#1E7A5F","#16213E"];
+  for(let i=0;i<n;i++){
+    const d = document.createElement("div");
+    d.className = "conf";
+    d.style.left = Math.random()*100+"vw";
+    d.style.background = cols[i%cols.length];
+    d.style.animation = "fall "+(1.5+Math.random()*1.2)+"s linear forwards";
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(), 3000);
+  }
+}
+
+/* ---------- save / load ---------- */
+function saveFile(){
+  const blob = new Blob([JSON.stringify({app:APP_ID, v:1, st, arabic}, null, 1)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const nm = (st.text.name||"").trim().replace(/[^A-Za-z0-9 _-]/g,"").replace(/\s+/g,"-");
+  a.download = APP_ID + (nm?"-"+nm:"") + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function loadFile(f){
+  const r = new FileReader();
+  r.onload = e => {
+    try{
+      const o = JSON.parse(e.target.result);
+      if(o.app && o.app !== APP_ID){ alert("That file is from a different app. Please choose the file saved from this page."); return; }
+      if(o.st){
+        st.ans = o.st.ans||{}; st.opened = o.st.opened||{}; st.text = o.st.text||{};
+        st.goals = o.st.goals||[]; st.self = o.st.self||{}; st.dg = o.st.dg||0;
+      }
+      arabic = !!o.arabic; setAr(); render();
+    }catch(err){ alert("That file could not be read."); }
+  };
+  r.readAsText(f);
+}
+function setAr(){
+  const b = $("#arBtn");
+  b.textContent = arabic ? "العربية ON" : "العربية OFF";
+  b.classList.toggle("on", arabic);
+}
+
+/* ---------- boot ---------- */
+$$(".tab").forEach(t=>t.onclick=()=>{ view=+t.dataset.view; window.scrollTo(0,0); render(); });
+$("#arBtn").onclick = () => { arabic = !arabic; setAr(); render(); };
+$("#saveBtn").onclick = saveFile;
+$("#loadBtn").onclick = () => $("#fileIn").click();
+$("#fileIn").onchange = e => { if(e.target.files[0]) loadFile(e.target.files[0]); e.target.value=""; };
+setAr();
+render();
+</script>
+</body>
+</html>
